@@ -11,11 +11,12 @@ namespace Creaxu.Framework.Services
 {
     public interface IStorageService
     {
-        Task<byte[]> GetBytes(string container, string fileName);
-        Task<Stream> GetStream(string container, string fileName);
-        Task Upload(string container, string fileName, Stream source);
-        Task Upload(string container, string fileName, byte[] source);
-        Task<List<Uri>> GetDirectories(string container, string relativeAddress);
+        Task<byte[]> GetBytesAsync(string container, string fileName);
+        Task<Stream> GetStreamAsync(string container, string fileName);
+        Task UploadAsync(string container, string fileName, Stream source);
+        Task UploadAsync(string container, string fileName, byte[] source);
+        Task DeleteAsync(string container, string fileName);
+        Task<List<Uri>> GetDirectoriesAsync(string container, string relativeAddress);
         Task SetMetadataAsync(string container, string fileName, string metadataKey, string metadataValue);
         string GetMetadata(string container, string fileName, string metadataKey);
     }
@@ -35,7 +36,7 @@ namespace Creaxu.Framework.Services
             _blobClient = storageAccount.CreateCloudBlobClient();
         }
 
-        public async Task<byte[]> GetBytes(string container, string fileName)
+        public async Task<byte[]> GetBytesAsync(string container, string fileName)
         {
             try
             {
@@ -56,7 +57,7 @@ namespace Creaxu.Framework.Services
             }
         }
 
-        public async Task<Stream> GetStream(string container, string fileName)
+        public async Task<Stream> GetStreamAsync(string container, string fileName)
         {
             try
             {
@@ -71,7 +72,7 @@ namespace Creaxu.Framework.Services
             }
         }
 
-        public async Task Upload(string container, string fileName, Stream source)
+        public async Task UploadAsync(string container, string fileName, Stream source)
         {
             var containerRef = _blobClient.GetContainerReference(container);
             var blockBlob = containerRef.GetBlockBlobReference(fileName);
@@ -79,12 +80,20 @@ namespace Creaxu.Framework.Services
             await blockBlob.UploadFromStreamAsync(source);
         }
 
-        public async Task Upload(string container, string fileName, byte[] source)
+        public async Task UploadAsync(string container, string fileName, byte[] source)
         {
             var containerRef = _blobClient.GetContainerReference(container);
             var blockBlob = containerRef.GetBlockBlobReference(fileName);
 
             await blockBlob.UploadFromByteArrayAsync(source, 0, source.Length);
+        }
+
+        public async Task DeleteAsync(string container, string fileName)
+        {
+            var containerRef = _blobClient.GetContainerReference(container);
+            var blockBlob = containerRef.GetBlockBlobReference(fileName);
+
+            await blockBlob.DeleteIfExistsAsync();
         }
 
         public async Task SetMetadataAsync(string container, string fileName, string metadataKey, string metadataValue)
@@ -105,7 +114,7 @@ namespace Creaxu.Framework.Services
             return blockBlob.Metadata[metadataKey];
         }
 
-        public async Task<List<Uri>> GetDirectories(string container, string relativeAddress)
+        public async Task<List<Uri>> GetDirectoriesAsync(string container, string relativeAddress)
         {
             var result = new List<Uri>();
 
