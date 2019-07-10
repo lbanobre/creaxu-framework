@@ -1,12 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Stripe;
+using Stripe.Checkout;
 
 namespace Creaxu.Framework.Services
 {
     public interface IStripeService
     {
+        Task<Customer> CreateCustomerAsync(string token, string email, string name);
+        Task<StripeList<Card>> GetCardListAsync(string customerId);
+        Task<Source> AttachAsync(string customerId, string token);
+        Task<Session> CreateSessionAsync(string customerId, string email, string itemName, string itemDescription, decimal amount, long quantity, string successUrl, string cancelUrl);
+        Task<Charge> CreateChargeAsync(string customerId, string source, string description, decimal amount);
+        Task<Session> GetSessionAsync(string sessionId);
         UsageRecord AddUsageRecord(string subscriptionItemId, int quantity);
         Subscription CancelSubscription(string stripeSubscriptionId);
         Subscription Change(string subscriptionId, string subscriptionItemId, string overageSubscriptionItemId, string monthlyPlanId, string overagePlanId);
@@ -24,6 +32,91 @@ namespace Creaxu.Framework.Services
             _configuration = configuration;
 
             StripeConfiguration.ApiKey = _configuration["Stripe:SecretKey"];
+        }
+
+        public async Task<Customer> CreateCustomerAsync(string token, string email, string name)
+        {
+            var options = new CustomerCreateOptions
+            {
+                Source = token,
+                Email = email,
+                Name = name
+            };
+
+            var service = new CustomerService();
+            return await service.CreateAsync(options);
+        }
+
+        public async Task<StripeList<Card>> GetCardListAsync(string customerId)
+        {
+            var service = new CardService();
+            return await service.ListAsync(customerId);
+        }
+
+        public async Task<Source> AttachAsync(string customerId, string token)
+        {
+            var options = new SourceAttachOptions
+            {
+                Source = token,
+            };
+            var service = new SourceService();
+            return await service.AttachAsync(customerId, options);
+        }
+
+        public async Task<Session> CreateSessionAsync(string customerId, string email, string itemName, string itemDescription, decimal amount, long quantity, string successUrl, string cancelUrl)
+        {
+            var options = new SessionCreateOptions
+            {
+                CustomerId = customerId,
+                CustomerEmail = customerId == null ? email : null,
+                BillingAddressCollection = "required",
+                PaymentMethodTypes = new List<string> {
+                    "card",
+                },
+                LineItems = new List<SessionLineItemOptions> {
+                    new SessionLineItemOptions {
+                        Name = itemName,
+                        Description = itemDescription,
+                        Amount = (long)(amount * 100),
+                        Currency = "usd",
+                        Quantity = quantity,
+                    },
+                },
+                PaymentIntentData = new SessionPaymentIntentDataOptions
+                {
+                    //ApplicationFeeAmount
+                    CaptureMethod = "manual",
+                },
+                SuccessUrl = successUrl,
+                CancelUrl = cancelUrl,
+            };
+
+            var service = new SessionService();
+
+            return await service.CreateAsync(options);
+        }
+
+        public async Task<Charge> CreateChargeAsync(string customerId, string source, string description, decimal amount)
+        {
+            var options = new ChargeCreateOptions
+            {
+                CustomerId = customerId,
+                Source = source,
+                Description = description,
+                Amount = (long)(amount * 100),
+                Currency = "usd",
+                Capture = false
+            };
+
+            var service = new ChargeService();
+            return await service.CreateAsync(options);
+        }
+
+        public async Task<Session> GetSessionAsync(string sessionId)
+        {
+            var service = new SessionService();
+
+            return await service.GetAsync(sessionId);
         }
 
         public Subscription Subscribe(string email, string name, string source, string monthlyPlanId, string overagePlanId)
