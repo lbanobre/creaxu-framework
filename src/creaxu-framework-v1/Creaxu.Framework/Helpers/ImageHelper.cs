@@ -20,8 +20,7 @@ namespace Creaxu.Framework.Helpers
                     width = maxWidth;
                     height = Convert.ToInt32(image.Height * maxWidth / (double)image.Width);
                 }
-
-
+                
                 var resized = new Bitmap(width, height);
 
                 using (var graphics = Graphics.FromImage(resized))
@@ -31,7 +30,7 @@ namespace Creaxu.Framework.Helpers
                     graphics.CompositingMode = CompositingMode.SourceCopy;
                     graphics.DrawImage(image, 0, 0, width, height);
                     var output = new MemoryStream();
-                    resized.Save(output, ImageFormat.Jpeg);
+                    resized.Save(output, ImageFormat.Png);
                     output.Seek(0, SeekOrigin.Begin);
                     return output;
                 }

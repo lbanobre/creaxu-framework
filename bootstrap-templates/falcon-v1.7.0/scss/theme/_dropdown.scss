@@ -1,0 +1,39 @@
+/*-----------------------------------------------
+|   Dropdowns
+-----------------------------------------------*/
+.dropdown-menu{
+  box-shadow: $box-shadow;
+}
+.dropdown-item{
+  transition: $transition-base;
+  padding-top: map_get($spacers, 1);
+  padding-bottom: map_get($spacers, 1);
+  @include hover{
+    background-color: $gray-200 !important;
+  }
+}
+.dropdown-caret-none::after{
+  display: none !important;
+}
+.dropdown-menu-small{
+  min-width: 7rem;
+}
+.dropdown-indicator{
+  position: relative;
+  &:after{
+    content: '';
+    display: block;
+    position: absolute;
+    right: 5px;
+    height: .4rem;
+    width: .4rem;
+    border-right: 1px solid $gray-700;
+    border-bottom: 1px solid $gray-700;
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    transition: $transition-base;
+    transform-origin: center;
+
+  }
+  &[aria-expanded="true"]:after{ transform: translateY(-50%) rotate(225deg); }
+}

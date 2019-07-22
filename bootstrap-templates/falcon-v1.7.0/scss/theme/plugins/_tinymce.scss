@@ -1,0 +1,58 @@
+.tox-editor-container .tox-toolbar {
+  border: 0 !important;
+}
+.tinymce-mobile-toolbar,
+.tox-edit-area,
+.tox-tinymce {
+  border-color: $gray-200 !important;
+}
+.tox-tbtn:not([disabled="disabled"]) {
+  color: $body-color !important;
+}
+.tox .tox-tbtn--enabled,
+.tox .tox-tbtn:active,
+.tox .tox-tbtn:hover,
+.tox .tox-tbtn:focus{
+  background-color: $gray-300 !important;
+}
+.tox .tox-tbtn:not([disabled="disabled"]) svg {
+  fill: $body-color !important;
+}
+.tinymce-mobile-toolstrip .tinymce-mobile-toolbar:not(.tinymce-mobile-context-toolbar) .tinymce-mobile-toolbar-group .tinymce-mobile-toolbar-group-item.tinymce-mobile-toolbar-button.tinymce-mobile-toolbar-button-selected {
+  background-color: $gray-300 !important;
+  color: $body-color !important;
+  border-radius: $border-radius;
+}
+.tox-collection__item--active {
+  background-color: $gray-300 !important;
+  color: $body-color !important;
+}
+.tox .tox-tbtn--select {
+  padding: 0 10px !important;
+}
+.tinymce-mobile-icon-full-dot:before {
+  color: $gray-300;
+}
+.tinymce-mobile-icon:not(.tinymce-mobile-icon-back),
+.tinymce-mobile-icon-large-font:before, 
+.tinymce-mobile-icon-style-formats:before,
+.tox .tox-collection__item {
+  color: $body-color !important;
+}
+.tinymce-mobile-toolbar-button svg,
+.tox-collection__item-caret svg {
+  fill: $body-color !important;
+}
+.tox .tox-toolbar__group:not(:last-of-type) {
+  border-right: 1px solid $gray-200 !important;
+}
+.tinymce-mobile-toolstrip .tinymce-mobile-toolbar:not(.tinymce-mobile-context-toolbar) .tinymce-mobile-toolbar-group:first-of-type, 
+.tinymce-mobile-toolstrip .tinymce-mobile-toolbar:not(.tinymce-mobile-context-toolbar) .tinymce-mobile-toolbar-group:last-of-type {
+  background-color: $primary !important;
+}
+.tinymce-mobile-disabled-mask {
+  background-color: $gray-200 !important;
+}
+.tinymce-mobile-outer-container:not(.tinymce-mobile-fullscreen-maximized) .tinymce-mobile-editor-socket {
+  height: 50vh !important;
+}

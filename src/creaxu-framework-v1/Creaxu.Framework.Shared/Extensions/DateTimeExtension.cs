@@ -41,5 +41,32 @@ namespace Creaxu.Framework.Shared.Extensions
 
             return TimeZoneInfo.ConvertTimeToUtc(localDateTime, tzi);
         }
+
+        public static string ToRelativeString(this DateTime utcDateTime)
+        {
+            var localDateTime = utcDateTime.ToLocalDateTime();
+
+            var s = localDateTime.Date.Subtract(DateTime.UtcNow.ToLocalDateTime().Date);
+
+            var dayDiff = s.TotalDays;
+
+
+            if (dayDiff == -1)
+            {
+                return "Yesterday at " + localDateTime.ToString("hh:mm tt");
+            }
+
+            if (dayDiff == 0)
+            {
+                return "Today at " + localDateTime.ToString("hh:mm tt");
+            }
+
+            if (dayDiff == 1)
+            {
+                return "Tomorrow at " + localDateTime.ToString("hh:mm tt");
+            }
+
+            return localDateTime.ToString("dddd, MMM dd, yyyy hh:mm tt");
+        }
     }
 }

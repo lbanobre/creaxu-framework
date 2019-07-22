@@ -1,0 +1,39 @@
+.flex-direction-nav a.flex-prev,
+.flex-direction-nav a.flex-next {
+  color: $white;
+  font-size: 1.5rem;
+  &:before {
+    display: none;
+  }
+}
+.flex-direction-nav .indicator-arrow {
+  height: 1rem;
+  width: 1rem
+}
+.product-slider{
+  height: 100%;
+}
+// .product-slider .flex-viewport{
+//   height: calc(100% - 5rem);
+// }
+.flex-control-thumbs li{
+  width: 20%;
+}
+.flex-control-thumbs li{
+  padding-right: 4px;
+}
+.flex-control-thumbs li img{
+  border-radius: $border-radius;
+  border: 1px solid transparent;
+}
+// .flex-control-thumbs{
+//   height: 5rem;
+// }
+.flex-control-thumbs li{
+  height: 100%;
+}
+.flex-active{
+  opacity: 1 !important;
+  border: 1px solid $gray-400 !important;
+
+}

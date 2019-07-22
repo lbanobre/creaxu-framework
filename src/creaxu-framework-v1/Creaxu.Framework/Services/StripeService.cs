@@ -12,9 +12,9 @@ namespace Creaxu.Framework.Services
         Task<Customer> CreateCustomerAsync(string token, string email, string name);
         Task<StripeList<Card>> GetCardListAsync(string customerId);
         Task<Source> AttachAsync(string customerId, string token);
-        Task<Session> CreateSessionAsync(string customerId, string email, string itemName, string itemDescription, decimal amount, long quantity, string successUrl, string cancelUrl);
-        Task<Charge> CreateChargeAsync(string customerId, string source, string description, decimal amount);
-        Task<Session> GetSessionAsync(string sessionId);
+        Task<Charge> CreateChargeAsync(string customerId, string source, string description, decimal amount, Dictionary<string, string> metadata);
+        Task<Charge> CreateCaptureAsync(string chargeId, decimal amount);
+        Task<Refund> CreateRefundAsync(string chargeId);
         UsageRecord AddUsageRecord(string subscriptionItemId, int quantity);
         Subscription CancelSubscription(string stripeSubscriptionId);
         Subscription Change(string subscriptionId, string subscriptionItemId, string overageSubscriptionItemId, string monthlyPlanId, string overagePlanId);
@@ -63,40 +63,7 @@ namespace Creaxu.Framework.Services
             return await service.AttachAsync(customerId, options);
         }
 
-        public async Task<Session> CreateSessionAsync(string customerId, string email, string itemName, string itemDescription, decimal amount, long quantity, string successUrl, string cancelUrl)
-        {
-            var options = new SessionCreateOptions
-            {
-                CustomerId = customerId,
-                CustomerEmail = customerId == null ? email : null,
-                BillingAddressCollection = "required",
-                PaymentMethodTypes = new List<string> {
-                    "card",
-                },
-                LineItems = new List<SessionLineItemOptions> {
-                    new SessionLineItemOptions {
-                        Name = itemName,
-                        Description = itemDescription,
-                        Amount = (long)(amount * 100),
-                        Currency = "usd",
-                        Quantity = quantity,
-                    },
-                },
-                PaymentIntentData = new SessionPaymentIntentDataOptions
-                {
-                    //ApplicationFeeAmount
-                    CaptureMethod = "manual",
-                },
-                SuccessUrl = successUrl,
-                CancelUrl = cancelUrl,
-            };
-
-            var service = new SessionService();
-
-            return await service.CreateAsync(options);
-        }
-
-        public async Task<Charge> CreateChargeAsync(string customerId, string source, string description, decimal amount)
+        public async Task<Charge> CreateChargeAsync(string customerId, string source, string description, decimal amount, Dictionary<string, string> metadata)
         {
             var options = new ChargeCreateOptions
             {
@@ -105,18 +72,34 @@ namespace Creaxu.Framework.Services
                 Description = description,
                 Amount = (long)(amount * 100),
                 Currency = "usd",
-                Capture = false
+                Capture = false,
+                Metadata = metadata
             };
 
             var service = new ChargeService();
             return await service.CreateAsync(options);
         }
 
-        public async Task<Session> GetSessionAsync(string sessionId)
+        public async Task<Charge> CreateCaptureAsync(string chargeId, decimal amount)
         {
-            var service = new SessionService();
+            var options = new ChargeCaptureOptions
+            {
+                Amount = (long)(amount * 100)
+            };
 
-            return await service.GetAsync(sessionId);
+            var service = new ChargeService();
+            return await service.CaptureAsync(chargeId, options);
+        }
+
+        public async Task<Refund> CreateRefundAsync(string chargeId)
+        {
+            var options = new RefundCreateOptions
+            {
+                ChargeId = chargeId,
+            };
+
+            var service = new RefundService();
+            return await service.CreateAsync(options);
         }
 
         public Subscription Subscribe(string email, string name, string source, string monthlyPlanId, string overagePlanId)

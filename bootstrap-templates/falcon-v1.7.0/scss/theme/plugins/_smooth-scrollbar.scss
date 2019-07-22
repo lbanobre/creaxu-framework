@@ -1,0 +1,9 @@
+.chat-thread-body .scroll-content {
+  padding-bottom: map_get($spacers, 3);
+}
+.scrollbar-track{
+  background: $gray-200 !important;
+}
+.scrollbar-thumb{
+  background: $gray-400 !important;
+}

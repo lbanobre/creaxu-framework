@@ -1,0 +1,25 @@
+.emojionearea { 
+  border: 1px solid $border-color;
+  .emojionearea-picker.emojionearea-picker-position-top{
+    right: 0; 
+    .emojionearea-wrapper:after{ right: 6px; }
+  } 
+  .emojionearea-editor{ 
+    color: $black !important; 
+    &:empty{
+      &:before{
+        color: $gray-400 !important; 
+      }
+    }
+    .emojioneemoji{
+      min-width: 16px;
+      min-height: 16px;
+    }
+  }
+  &.form-control{
+    border: 1px solid $border-color;
+  }
+  .emojionearea-wrapper{
+    &:after{ display: none !important; }
+  }
+}
