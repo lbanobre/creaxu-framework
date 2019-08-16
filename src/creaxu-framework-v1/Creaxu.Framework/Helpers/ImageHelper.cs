@@ -5,12 +5,13 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace Creaxu.Framework.Helpers
 {
     public static class ImageHelper
     {
-        public static Stream Resize(Stream source, int maxWidth)
+        public static Stream Resize(Stream source, int maxWidth, CompositingQuality compositingQuality = CompositingQuality.HighSpeed)
         {
             using (var image = new Bitmap(source))
             {
@@ -25,7 +26,7 @@ namespace Creaxu.Framework.Helpers
 
                 using (var graphics = Graphics.FromImage(resized))
                 {
-                    graphics.CompositingQuality = CompositingQuality.HighSpeed;
+                    graphics.CompositingQuality = compositingQuality;
                     graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                     graphics.CompositingMode = CompositingMode.SourceCopy;
                     graphics.DrawImage(image, 0, 0, width, height);
@@ -34,6 +35,20 @@ namespace Creaxu.Framework.Helpers
                     output.Seek(0, SeekOrigin.Begin);
                     return output;
                 }
+            }
+        }
+
+        public static string ConvertToBase64(Stream input)
+        {
+           var buffer = new byte[16 * 1024];
+            using (var ms = new MemoryStream())
+            {
+                int read;
+                while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    ms.Write(buffer, 0, read);
+                }
+                return Convert.ToBase64String(ms.ToArray());
             }
         }
     }

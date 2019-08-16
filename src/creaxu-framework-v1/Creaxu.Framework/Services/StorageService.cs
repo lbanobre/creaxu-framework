@@ -13,6 +13,7 @@ namespace Creaxu.Framework.Services
     {
         Task<byte[]> GetBytesAsync(string container, string fileName);
         Task<Stream> GetStreamAsync(string container, string fileName);
+        Task<string> GetStringAsync(string container, string fileName);
         Task UploadAsync(string container, string fileName, Stream source);
         Task UploadAsync(string container, string fileName, byte[] source);
         Task DeleteAsync(string container, string fileName);
@@ -65,6 +66,27 @@ namespace Creaxu.Framework.Services
                 var blockBlob = containerRef.GetBlockBlobReference(fileName);
 
                 return await blockBlob.OpenReadAsync();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public async Task<string> GetStringAsync(string container, string fileName)
+        {
+            try
+            {
+                var containerRef = _blobClient.GetContainerReference(container);
+                var blockBlob = containerRef.GetBlockBlobReference(fileName);
+
+                byte[] bytes;
+                using (var ms = new MemoryStream())
+                {
+                    await blockBlob.DownloadToStreamAsync(ms);
+                    bytes = ms.ToArray();
+                }
+                return System.Text.Encoding.UTF8.GetString(bytes);
             }
             catch
             {

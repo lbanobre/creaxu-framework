@@ -9,12 +9,14 @@ namespace Creaxu.Framework.Services
 {
     public interface IStripeService
     {
+        Task<LoginLink> CreateLoginLinkAsync(string accountId, string redirectUrl);
         Task<Customer> CreateCustomerAsync(string token, string email, string name);
         Task<StripeList<Card>> GetCardListAsync(string customerId);
         Task<Source> AttachAsync(string customerId, string token);
-        Task<Charge> CreateChargeAsync(string customerId, string source, string description, decimal amount, Dictionary<string, string> metadata);
-        Task<Charge> CreateCaptureAsync(string chargeId, decimal amount);
+        Task<Charge> CreateChargeAsync(string customerId, string source, string destination, string description, decimal totalAmount, decimal applicationFeeAmount, Dictionary<string, string> metadata);
+        Task<Charge> CreateCaptureAsync(string chargeId, decimal amount, decimal applicationFeeAmount);
         Task<Refund> CreateRefundAsync(string chargeId);
+        Task<OAuthToken> CreateOAuthTokenAsync(string code);
         UsageRecord AddUsageRecord(string subscriptionItemId, int quantity);
         Subscription CancelSubscription(string stripeSubscriptionId);
         Subscription Change(string subscriptionId, string subscriptionItemId, string overageSubscriptionItemId, string monthlyPlanId, string overagePlanId);
@@ -33,6 +35,19 @@ namespace Creaxu.Framework.Services
 
             StripeConfiguration.ApiKey = _configuration["Stripe:SecretKey"];
         }
+
+
+        public async Task<LoginLink> CreateLoginLinkAsync(string accountId, string redirectUrl)
+        {
+            var options = new LoginLinkCreateOptions
+            {
+                RedirectUrl = redirectUrl
+            };
+
+            var service = new LoginLinkService();
+            return await service.CreateAsync(accountId, options);
+        }
+
 
         public async Task<Customer> CreateCustomerAsync(string token, string email, string name)
         {
@@ -63,14 +78,16 @@ namespace Creaxu.Framework.Services
             return await service.AttachAsync(customerId, options);
         }
 
-        public async Task<Charge> CreateChargeAsync(string customerId, string source, string description, decimal amount, Dictionary<string, string> metadata)
+        public async Task<Charge> CreateChargeAsync(string customerId, string source, string destination, string description, decimal totalAmount, decimal applicationFeeAmount, Dictionary<string, string> metadata)
         {
             var options = new ChargeCreateOptions
             {
                 CustomerId = customerId,
                 Source = source,
                 Description = description,
-                Amount = (long)(amount * 100),
+                Amount = (long)(totalAmount * 100),
+                ApplicationFeeAmount = (long)(applicationFeeAmount * 100),
+                TransferData = new ChargeTransferDataOptions { Destination = destination },
                 Currency = "usd",
                 Capture = false,
                 Metadata = metadata
@@ -80,11 +97,12 @@ namespace Creaxu.Framework.Services
             return await service.CreateAsync(options);
         }
 
-        public async Task<Charge> CreateCaptureAsync(string chargeId, decimal amount)
+        public async Task<Charge> CreateCaptureAsync(string chargeId, decimal amount, decimal applicationFeeAmount)
         {
             var options = new ChargeCaptureOptions
             {
-                Amount = (long)(amount * 100)
+                Amount = (long)(amount * 100),
+                ApplicationFeeAmount = (long)(applicationFeeAmount * 100)
             };
 
             var service = new ChargeService();
@@ -99,6 +117,19 @@ namespace Creaxu.Framework.Services
             };
 
             var service = new RefundService();
+            return await service.CreateAsync(options);
+        }
+
+        public async Task<OAuthToken> CreateOAuthTokenAsync(string code)
+        {
+            var options = new OAuthTokenCreateOptions
+            {
+                ClientSecret = StripeConfiguration.ApiKey,
+                Code = code,
+                GrantType = "authorization_code"
+            };
+
+            var service = new OAuthTokenService();
             return await service.CreateAsync(options);
         }
 
