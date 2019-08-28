@@ -15,6 +15,8 @@ namespace Creaxu.Framework.Services
         Task<Source> AttachAsync(string customerId, string token);
         Task<Charge> CreateChargeAsync(string customerId, string source, string destination, string description, decimal totalAmount, decimal applicationFeeAmount, Dictionary<string, string> metadata);
         Task<Charge> CreateCaptureAsync(string chargeId, decimal amount, decimal applicationFeeAmount);
+        Task<StripeList<Payout>> GetPayoutsAsync(string accountId);
+        Task<List<string>> GetPayoutTransactionsAsync(string accountId, string payoutId);
         Task<Refund> CreateRefundAsync(string chargeId);
         Task<OAuthToken> CreateOAuthTokenAsync(string code);
         UsageRecord AddUsageRecord(string subscriptionItemId, int quantity);
@@ -107,6 +109,35 @@ namespace Creaxu.Framework.Services
 
             var service = new ChargeService();
             return await service.CaptureAsync(chargeId, options);
+        }
+
+        public async Task<StripeList<Payout>> GetPayoutsAsync(string accountId)
+        {
+            var payoutService = new PayoutService();
+
+            return await payoutService.ListAsync(new PayoutListOptions { Limit = 100 }, new RequestOptions { StripeAccount = accountId });
+        }
+
+        public async Task<List<string>> GetPayoutTransactionsAsync(string accountId, string payoutId)
+        {
+            var result = new List<string>();
+
+            var balanceTransactionService = new BalanceTransactionService();
+            var chargeService = new ChargeService();
+            var transferService = new TransferService();
+
+            var requestOptions = new RequestOptions { StripeAccount = accountId };
+
+            var transactions = await balanceTransactionService.ListAsync(new BalanceTransactionListOptions { PayoutId = payoutId, Type = "payment", Limit = 100 }, requestOptions);
+            foreach (var transaction in transactions)
+            {
+                var payment = await chargeService.GetAsync(transaction.SourceId, null, requestOptions);
+                var transfer = await transferService.GetAsync(payment.SourceTransferId);
+
+                result.Add(transfer.SourceTransactionId);
+            }
+
+            return result;
         }
 
         public async Task<Refund> CreateRefundAsync(string chargeId)
