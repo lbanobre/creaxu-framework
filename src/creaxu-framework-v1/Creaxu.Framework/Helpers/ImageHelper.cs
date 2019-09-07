@@ -38,6 +38,16 @@ namespace Creaxu.Framework.Helpers
             }
         }
 
+        public static byte[] Resize(byte[] source, int maxWidth, CompositingQuality compositingQuality = CompositingQuality.HighSpeed)
+        {
+            var stream = Resize(new MemoryStream(source), maxWidth, compositingQuality);
+
+            byte[] result = new byte[stream.Length];
+            stream.Read(result, 0, (int)stream.Length);
+
+            return result;
+        }
+
         public static string ConvertToBase64(Stream input)
         {
            var buffer = new byte[16 * 1024];
