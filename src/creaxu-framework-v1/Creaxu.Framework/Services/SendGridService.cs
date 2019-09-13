@@ -11,6 +11,7 @@ namespace Creaxu.Framework.Services
     public interface ISendGridService
     {
         Task Send(string email, string name, string templateName, object dynamicTemplateData, Dictionary<string, string> attachments = null);
+        Task Send(string email, string subject, string body);
     }
 
     public class SendGridService : ISendGridService
@@ -41,6 +42,16 @@ namespace Creaxu.Framework.Services
             }
 
             await _sendGridClient.SendEmailAsync(message);            
+        }
+
+        public async Task Send(string email, string subject, string body)
+        {
+            var message = MailHelper.CreateSingleEmail(
+                new EmailAddress(_configuration["SendGrid:From:Email"], _configuration["SendGrid:From:Name"]),
+                new EmailAddress(email),
+                subject, body, null);
+
+            await _sendGridClient.SendEmailAsync(message);
         }
     }
 }
