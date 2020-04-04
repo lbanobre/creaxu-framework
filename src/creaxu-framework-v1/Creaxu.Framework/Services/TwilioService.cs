@@ -14,6 +14,7 @@ namespace Creaxu.Framework.Services
     {
         List<string> GetAvailableNumbers(int areaCode);
         void AssignNumber(string phone);
+        MessageResource SendMessage(string to, string body);
         MessageResource SendMessage(string from, string to, string body);
     }
 
@@ -35,9 +36,14 @@ namespace Creaxu.Framework.Services
 
         public void AssignNumber(string phone)
         {
-            var replyUrl = _configuration["Twilio:ReplyUrl"];
+            var replyUrl = _configuration["Twilio:MessageReceiverUrl"];
 
             IncomingPhoneNumberResource.Create(phoneNumber: new PhoneNumber(phone), smsMethod: HttpMethod.Post, smsUrl: new Uri(replyUrl));
+        }
+
+        public MessageResource SendMessage(string to, string body)
+        {
+            return SendMessage(_configuration["Twilio:PhoneService"], to, body);
         }
 
         public MessageResource SendMessage(string from, string to, string body)

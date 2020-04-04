@@ -19,7 +19,6 @@ namespace Creaxu.Framework.Services
         Task DeleteAsync(string container, string fileName);
         Task<List<Uri>> GetDirectoriesAsync(string container, string relativeAddress);
         Task<List<Uri>> GetBlobsAsync(string container);
-        Task<List<Uri>> GetBlobsAsync(string container, string relativeAddress);
         Task SetMetadataAsync(string container, string fileName, string metadataKey, string metadataValue);
         string GetMetadata(string container, string fileName, string metadataKey);
     }
@@ -176,33 +175,6 @@ namespace Creaxu.Framework.Services
             do
             {
                 var blobResultSegment = await containerRef.ListBlobsSegmentedAsync(continuationToken);
-                continuationToken = blobResultSegment.ContinuationToken;
-
-                foreach (var item in blobResultSegment.Results)
-                {
-                    if (item is CloudBlockBlob)
-                    {
-                        result.Add(((CloudBlockBlob)item).Uri);
-                    }
-                }
-
-            }
-            while (continuationToken != null);
-
-            return result;
-        }
-
-        public async Task<List<Uri>> GetBlobsAsync(string container, string relativeAddress)
-        {
-            var result = new List<Uri>();
-
-            var containerRef = _blobClient.GetContainerReference(container);
-            var directoryRef = containerRef.GetDirectoryReference(relativeAddress);
-
-            BlobContinuationToken continuationToken = null;
-            do
-            {
-                var blobResultSegment = await directoryRef.ListBlobsSegmentedAsync(continuationToken);
                 continuationToken = blobResultSegment.ContinuationToken;
 
                 foreach (var item in blobResultSegment.Results)

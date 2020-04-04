@@ -84,7 +84,7 @@ namespace Creaxu.Framework.Services
         {
             var options = new ChargeCreateOptions
             {
-                CustomerId = customerId,
+                Customer = customerId,
                 Source = source,
                 Description = description,
                 Amount = (long)(totalAmount * 100),
@@ -128,7 +128,7 @@ namespace Creaxu.Framework.Services
 
             var requestOptions = new RequestOptions { StripeAccount = accountId };
 
-            var transactions = await balanceTransactionService.ListAsync(new BalanceTransactionListOptions { PayoutId = payoutId, Type = "payment", Limit = 100 }, requestOptions);
+            var transactions = await balanceTransactionService.ListAsync(new BalanceTransactionListOptions { Payout = payoutId, Type = "payment", Limit = 100 }, requestOptions);
             foreach (var transaction in transactions)
             {
                 var payment = await chargeService.GetAsync(transaction.SourceId, null, requestOptions);
@@ -144,7 +144,7 @@ namespace Creaxu.Framework.Services
         {
             var options = new RefundCreateOptions
             {
-                ChargeId = chargeId,
+                Charge = chargeId,
             };
 
             var service = new RefundService();
@@ -176,14 +176,14 @@ namespace Creaxu.Framework.Services
 
             var subscriptionService = new SubscriptionService();
 
-            var items = new List<SubscriptionItemOption> {
-                new SubscriptionItemOption { PlanId = monthlyPlanId },
-                new SubscriptionItemOption { PlanId = overagePlanId }
+            var items = new List<SubscriptionItemOptions> {
+                new SubscriptionItemOptions { Plan = monthlyPlanId },
+                new SubscriptionItemOptions { Plan = overagePlanId }
             };
 
             var subscription = subscriptionService.Create(new SubscriptionCreateOptions
             {
-                CustomerId = customer.Id,
+                Customer = customer.Id,
                 Items = items,
             });
 
@@ -203,7 +203,7 @@ namespace Creaxu.Framework.Services
 
             var upcomingInvoiceOptions = new UpcomingInvoiceOptions()
             {
-                CustomerId = customerId
+                Customer = customerId
             };
 
             return invoiceService.Upcoming(upcomingInvoiceOptions);
@@ -226,16 +226,15 @@ namespace Creaxu.Framework.Services
         {
             var subscriptionService = new SubscriptionService();
 
-            var items = new List<SubscriptionItemUpdateOption> {
-                new SubscriptionItemUpdateOption {
-                    Id = subscriptionItemId,
-                    PlanId = monthlyPlanId,
+            var items = new List<SubscriptionItemOptions> {
+                new SubscriptionItemOptions {
+                    Plan = monthlyPlanId,
                 },
-                new SubscriptionItemUpdateOption {
-                    Id = overageSubscriptionItemId,
-                    PlanId = overagePlanId,
+                new SubscriptionItemOptions {
+                    Plan = overagePlanId,
                 }
             };
+
             var options = new SubscriptionUpdateOptions
             {
                 CancelAtPeriodEnd = false,
