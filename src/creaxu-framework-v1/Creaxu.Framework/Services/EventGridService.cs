@@ -4,55 +4,36 @@ using Microsoft.Azure.EventGrid.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.Extensions.Configuration;
 
 namespace Creaxu.Framework.Services
 {
-   class EventGridService
+   public interface IEventGridService
    {
-      static object lockInstance = new object();
-
-      private static Dictionary<string, EventGridService> instance = new Dictionary<string, EventGridService>();
-      private static Dictionary<string, EventGridClient> clients = new Dictionary<string, EventGridClient>();
-
-      private static string _eventGridKey;
-      private static string _eventGridTopicEndpoint;
-
-      public static EventGridService Instance(string EventGridKey = "EventGridKey", string EventGridTopicEndpoint = "EventGridTopicEndpoint")
-      {
-         string topicEndpoint = CloudConfigurationManager.GetSetting(EventGridTopicEndpoint);
-         string topicKey = CloudConfigurationManager.GetSetting(EventGridKey);
-
-         _eventGridKey = topicKey;
-         _eventGridTopicEndpoint = topicEndpoint;
-
-         if (!instance.ContainsKey(topicKey + "|" + topicEndpoint))
-         {
-            lock (lockInstance)
-            {
+      void SendEvents(List<EventGridEvent> events);
+   }
 
 
-               TopicCredentials topicCredentials = new TopicCredentials(topicKey);
-               EventGridClient client = new EventGridClient(topicCredentials);
+   public class EventGridService: IEventGridService
+   {
+      private readonly EventGridClient _client=null;
+      private readonly string _eventGridTopicEndpoint;
 
-               instance[topicKey + "|" + topicEndpoint] = new EventGridService();
+      public EventGridService(IConfiguration configuration)
+      { 
+         _eventGridTopicEndpoint = configuration["EventGrid:TopicEndpoint"];
+         var topicKey = configuration["EventGrid:key"];
 
-               clients[topicKey + "|" + topicEndpoint] = client;
-
-
-            }
-         }
-
-         return instance[topicKey + "|" + topicEndpoint];
+         var topicCredentials = new TopicCredentials(topicKey);
+         _client = new EventGridClient(topicCredentials);
       }
 
-
-
-      public void SendMessagesToEventGrid(List<EventGridEvent> events)
+      public void SendEvents(List<EventGridEvent> events)
       {
          try
          {
-            string topicHostname = new Uri(_eventGridTopicEndpoint).Host;
-            var result = clients[_eventGridKey + "|" + _eventGridTopicEndpoint].PublishEventsWithHttpMessagesAsync(topicHostname, events).GetAwaiter().GetResult();
+            var topicHostname = new Uri(_eventGridTopicEndpoint).Host;
+            var result = _client.PublishEventsWithHttpMessagesAsync(topicHostname, events).GetAwaiter().GetResult();
 
             if (result.Response.IsSuccessStatusCode)
                return;

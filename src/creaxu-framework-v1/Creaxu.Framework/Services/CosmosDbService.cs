@@ -20,6 +20,7 @@ namespace Creaxu.Framework.Services
         Task DeleteItemAsync(Guid id, string partitionKey);
         Task<T> GetItemAsync(Guid id, string partitionKey);
         Task<T> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate);
+        Task<T> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
         Task<List<T>> GetItemsAsync(Expression<Func<T, bool>> predicate);
         Task<List<T>> GetItemsAsync();
     }
@@ -88,7 +89,12 @@ namespace Creaxu.Framework.Services
             return await queryable.Where(predicate).SingleOrDefaultAsync();
         }
 
-        public async Task<List<T>> GetItemsAsync(Expression<Func<T, bool>> predicate)
+        public async Task<T> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
+        {
+           return   _container.GetItemLinqQueryable<T>(true).Where(predicate).AsEnumerable().FirstOrDefault();
+        }
+
+      public async Task<List<T>> GetItemsAsync(Expression<Func<T, bool>> predicate)
         {
             var queryable = _container.GetItemLinqQueryable<T>();
 
