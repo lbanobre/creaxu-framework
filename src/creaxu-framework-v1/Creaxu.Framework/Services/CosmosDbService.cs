@@ -15,12 +15,12 @@ namespace Creaxu.Framework.Services
 {
     public interface ICosmosDbService<T>
     {
-        Task CreateItemAsync(T item);
+        Task<T> CreateItemAsync(T item);
         Task UpsertItemAsync(T item);
         Task DeleteItemAsync(Guid id, string partitionKey);
         Task<T> GetItemAsync(Guid id, string partitionKey);
-        Task<T> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate);
-        Task<T> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
+        T SingleOrDefault(Expression<Func<T, bool>> predicate);
+        T FirstOrDefault(Expression<Func<T, bool>> predicate);
         Task<List<T>> GetItemsAsync(Expression<Func<T, bool>> predicate);
         Task<List<T>> GetItemsAsync();
     }
@@ -53,14 +53,14 @@ namespace Creaxu.Framework.Services
             await database.Database.CreateContainerIfNotExistsAsync(containerId, "/pk");
         }
 
-        public async Task CreateItemAsync(T item)
+        public async Task<T> CreateItemAsync(T item)
         {
-            await _container.CreateItemAsync(item, new PartitionKey(item.PartitionKey));
+            return (await _container.CreateItemAsync(item, new PartitionKey(item.PartitionKey))).Resource;
         }
 
         public async Task UpsertItemAsync(T item)
         {
-            await _container.UpsertItemAsync(item, new PartitionKey(item.PartitionKey), new ItemRequestOptions { IfMatchEtag = item._etag  });
+            await _container.UpsertItemAsync(item, new PartitionKey(item.PartitionKey), new ItemRequestOptions { IfMatchEtag = item._etag });
         }
 
         public async Task DeleteItemAsync(Guid id, string partitionKey)
@@ -79,22 +79,23 @@ namespace Creaxu.Framework.Services
             {
                 return null;
             }
-
         }
 
-        public async Task<T> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate)
+        public T SingleOrDefault(Expression<Func<T, bool>> predicate)
         {
             var queryable = _container.GetItemLinqQueryable<T>();
 
-            return await queryable.Where(predicate).SingleOrDefaultAsync();
+            return queryable.Where(predicate).AsEnumerable().SingleOrDefault();
         }
 
-        public async Task<T> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
+        public T FirstOrDefault(Expression<Func<T, bool>> predicate)
         {
-           return   _container.GetItemLinqQueryable<T>(true).Where(predicate).AsEnumerable().FirstOrDefault();
+            var queryable = _container.GetItemLinqQueryable<T>();
+
+            return queryable.Where(predicate).AsEnumerable().FirstOrDefault();
         }
 
-      public async Task<List<T>> GetItemsAsync(Expression<Func<T, bool>> predicate)
+        public async Task<List<T>> GetItemsAsync(Expression<Func<T, bool>> predicate)
         {
             var queryable = _container.GetItemLinqQueryable<T>();
 
