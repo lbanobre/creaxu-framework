@@ -68,5 +68,17 @@ namespace Creaxu.Framework.Shared.Extensions
 
             return localDateTime.ToString("dddd, MMM dd, yyyy hh:mm tt");
         }
+
+        public static string ToHourString(this DateTime date)
+        {
+            if (date.Hour >= 12)
+            {
+                return date.ToString("h:mm 'PM'");
+            }
+            else
+            {
+                return date.ToString("h:mm 'AM'");
+            }
+        }
     }
 }
