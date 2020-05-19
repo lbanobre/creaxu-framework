@@ -7,6 +7,8 @@ using Twilio.Rest.Api.V2010.Account.AvailablePhoneNumberCountry;
 using Twilio.Types;
 using Twilio.Http;
 using System.Linq;
+using Twilio.Rest.Video.V1;
+using Twilio.Jwt.AccessToken;
 
 namespace Creaxu.Framework.Services
 {
@@ -43,16 +45,21 @@ namespace Creaxu.Framework.Services
 
         public MessageResource SendMessage(string to, string body)
         {
-            return SendMessage(_configuration["Twilio:PhoneService"], to, body);
+            return SendMessage(_configuration["Twilio:PhoneService"], to, body, null);
         }
 
         public MessageResource SendMessage(string from, string to, string body)
+        {
+            return SendMessage(from, to, body, new Uri(_configuration["Twilio:StatusCallbackUrl"]));
+        }
+
+        public MessageResource SendMessage(string from, string to, string body, Uri statusCallback)
         {
             return MessageResource.Create(
                 from: new PhoneNumber(from),
                 to: new PhoneNumber(to),
                 body: body.Replace(Environment.NewLine, "\n"),
-                statusCallback: new Uri(_configuration["Twilio:StatusCallbackUrl"]));
+                statusCallback: statusCallback);
         }
     }
 }
