@@ -30,7 +30,9 @@ namespace Creaxu.Framework.Services
         Invoice GetUpcomingInvoice(string customerId);
         Subscription Subscribe(string email, string name, string sourceToken, string monthlyPlanId, string overagePlanId);
         Task<Session> CreateSessionAsync(string customerId, string accountId, string itemName, string itemDescription, decimal amount, decimal applicationFee, string successUrl, string cancelUrl);
+        Task<Session> GetCheckoutSession(string sessionId);
         Task<Customer> GetCustomerAsync(string customerId);
+        Task<Account> GetAccountAsync(string accountId);
         Task<PaymentIntent> GetPaymentIntentAsync(string paymentIntentId);
         Task<PaymentMethod> GetPaymentMethodAsync(string paymentMethodId);
         Task<PaymentIntent> CreatePaymentIntentAsync(string customerId, string accountId, string description, decimal amount, decimal applicationFeeAmount, string paymentMethodId);
@@ -345,6 +347,17 @@ namespace Creaxu.Framework.Services
             return await service.CreateAsync(options);
         }
 
+        public async Task<Session> GetCheckoutSession(string sessionId)
+        {
+            var options = new SessionGetOptions();
+
+            options.AddExpand("setup_intent");
+            options.AddExpand("payment_intent");
+
+            var service = new SessionService();
+            return await service.GetAsync(sessionId, options);
+        }
+
         public async Task<PaymentIntent> CreatePaymentIntentAsync(string customerId, string accountId, string description, decimal amount, decimal applicationFeeAmount, string paymentMethodId)
         {
             var options = new PaymentIntentCreateOptions
@@ -376,6 +389,13 @@ namespace Creaxu.Framework.Services
             var service = new CustomerService();
 
             return await service.GetAsync(customerId);
+        }
+
+        public async Task<Account> GetAccountAsync(string accountId)
+        {
+            var service = new AccountService();
+
+            return await service.GetAsync(accountId);
         }
 
         public async Task<PaymentIntent> GetPaymentIntentAsync(string paymentIntentId)
