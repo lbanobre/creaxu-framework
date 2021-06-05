@@ -1,5 +1,7 @@
 using System;
+using System.Globalization;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
 namespace Creaxu.Blazor
@@ -14,11 +16,14 @@ namespace Creaxu.Blazor
     public class BlazorCulture : IAsyncDisposable
     {
         private readonly Lazy<Task<IJSObjectReference>> _moduleTask;
+        private readonly NavigationManager _navigationManager;
 
-        public BlazorCulture(IJSRuntime jsRuntime)
+        public BlazorCulture(IJSRuntime jsRuntime, NavigationManager navigationManager)
         {
             _moduleTask = new(() => jsRuntime.InvokeAsync<IJSObjectReference>(
                "import", "./_content/Creaxu.Blazor/blazorCulture.js").AsTask());
+
+            _navigationManager = navigationManager;
         }
 
         public async ValueTask SetBlazorCulture(string value)
@@ -27,6 +32,17 @@ namespace Creaxu.Blazor
             await module.InvokeVoidAsync("setBlazorCulture", value);
         }
         
+        public async ValueTask<string> SwitchCulture()
+        {
+            var culture = CultureInfo.CurrentCulture.Name == "en-US" ?  "es-US" : "en-US";
+
+            await SetBlazorCulture(culture);
+        
+            _navigationManager.NavigateTo(_navigationManager.Uri, forceLoad: true);
+
+            return culture;
+        }
+       
         public async ValueTask<string> GetBlazorCulture()
         {
             var module = await _moduleTask.Value;

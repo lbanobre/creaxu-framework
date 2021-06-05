@@ -15,6 +15,15 @@ namespace Creaxu.Core.Services
         Task AddCreditCardAsync(string customerId, string cardholderName, string number, string cvc, long expMonth, long expYear, string zipCode);
         Task<PaymentMethod> GetDefaultCreditCardAsync(string customerId);
         Task RemoveAllCreditCards(string customerId);
+        Task<Account> CreateAccountAsync(string email);
+        Task<AccountLink> CreateAccountLinkAsync(string accountId, string refreshUrl, string returnUrl, StripeService.AccountLinkTypes type);
+        Task<LoginLink> CreateLoginLinkAsync(string accountId);
+        Task<Account> GetAccountAsync(string accountId);
+        Task<Session> CreateCheckoutSession(string customerId, string successUrl, string cancelUrl);
+
+        Task<PaymentIntent> CreateChargeAsync(string accountId, string customerId, string paymentMethodId,
+            string description, decimal amount, decimal applicationFeeAmount,
+            Dictionary<string, string> metadata = null);
     }
 
     public class StripeService : IStripeService
@@ -108,6 +117,93 @@ namespace Creaxu.Core.Services
             {
                 await paymentMethodService.DetachAsync(card.Id);
             }
+        }
+        
+        public async Task<Account> CreateAccountAsync(string email)
+        {
+            var options = new AccountCreateOptions
+            {
+                Type = "express",
+                Email = email
+            };
+
+            var service = new AccountService();
+            return await service.CreateAsync(options);
+        }
+        
+        public async Task<AccountLink> CreateAccountLinkAsync(string accountId, string refreshUrl, string returnUrl, AccountLinkTypes type)
+        {
+            var options = new AccountLinkCreateOptions
+            {
+                Account = accountId,
+                RefreshUrl = refreshUrl,
+                ReturnUrl = returnUrl,
+                Type = type == AccountLinkTypes.Onboarding ? "account_onboarding" : "account_update"
+            };
+
+            var service = new AccountLinkService();
+            return await service.CreateAsync(options);;
+        }
+
+        public enum AccountLinkTypes
+        {
+            Onboarding,
+            Update
+        }
+        
+        public async Task<LoginLink> CreateLoginLinkAsync(string accountId)
+        {
+            var service = new LoginLinkService();
+            return await service.CreateAsync(accountId);
+        }
+        
+        public async Task<Account> GetAccountAsync(string accountId)
+        {
+            var service = new AccountService();
+            return await service.GetAsync(accountId);
+        }
+
+        public async Task<Session> CreateCheckoutSession(string customerId, string successUrl, string cancelUrl)
+        {
+            var options = new SessionCreateOptions {
+                PaymentMethodTypes = new List<string> {
+                    "card",
+                },
+                Mode = "setup",
+                Customer = customerId,
+                SuccessUrl = successUrl,
+                CancelUrl = cancelUrl,
+            };
+
+            var service = new SessionService();
+            return await service.CreateAsync(options);
+        }
+        
+        public async Task<PaymentIntent> CreateChargeAsync(string accountId, string customerId, string paymentMethodId, string description, decimal amount, decimal applicationFeeAmount, Dictionary<string, string> metadata = null)
+        {
+            var options = new PaymentIntentCreateOptions
+            {
+                Description = description,
+                Amount = (long)(amount * 100),
+                ApplicationFeeAmount = (long)(applicationFeeAmount * 100),
+                Currency = "usd",
+                PaymentMethodTypes = new List<string>
+                {
+                    "card"
+                },
+                Customer = customerId,
+                PaymentMethod = paymentMethodId,
+                Confirm = true,
+                OffSession = true,
+                Metadata = metadata,
+                TransferData = new PaymentIntentTransferDataOptions()
+                {
+                    Destination = accountId
+                }
+            };
+            
+            var service = new PaymentIntentService();
+            return await service.CreateAsync(options);         
         }
     }
 }
