@@ -9,10 +9,7 @@ namespace Creaxu.Core.Helpers
             if (string.IsNullOrEmpty(email))
                 return false;
             
-            var regex = new Regex(@"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$");  
-            var match = regex.Match(email);
-
-            return match.Success;
+            return Regex.IsMatch(email, @"\A(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\Z", RegexOptions.IgnoreCase);
         }
         
         public static string Clean(string email)
