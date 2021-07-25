@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using SendGrid.Helpers.Mail;
@@ -29,11 +30,13 @@ namespace Creaxu.Framework.Services
         Subscription GetSubscription(string subscriptionId);
         Invoice GetUpcomingInvoice(string customerId);
         Subscription Subscribe(string email, string name, string sourceToken, string monthlyPlanId, string overagePlanId);
+        Task<Session> CreateSessionAsync(string customerId, string successUrl, string cancelUrl);
         Task<Session> CreateSessionAsync(string customerId, string accountId, string itemName, string itemDescription, decimal amount, decimal applicationFee, string successUrl, string cancelUrl);
         Task<Session> GetCheckoutSession(string sessionId);
         Task<Customer> GetCustomerAsync(string customerId);
         Task<Account> GetAccountAsync(string accountId);
         Task<PaymentIntent> GetPaymentIntentAsync(string paymentIntentId);
+        Task<PaymentMethod> GetDefaultPaymentMethodAsync(string customerId);
         Task<PaymentMethod> GetPaymentMethodAsync(string paymentMethodId);
         Task<PaymentIntent> CreatePaymentIntentAsync(string customerId, string accountId, string description, decimal amount, decimal applicationFeeAmount, string paymentMethodId);
         Task<PaymentMethod> DetachPaymentMethodAsync(string paymentMethodId);
@@ -116,19 +119,6 @@ namespace Creaxu.Framework.Services
                 Limit = 3,
             };
             return await service.ListAsync(customerId, options);
-        }
-
-
-        public async Task<StripeList<PaymentMethod>> GetPaymentMethodsAsync(string customerId)
-        {
-            var options = new PaymentMethodListOptions
-            {
-                Customer = customerId,
-                Type = "card",
-            };
-
-            var service = new PaymentMethodService();
-            return await service.ListAsync(options);
         }
 
         public async Task<Source> AttachAsync(string customerId, string token)
@@ -312,6 +302,23 @@ namespace Creaxu.Framework.Services
             return subscriptionService.Cancel(stripeSubscriptionId, new SubscriptionCancelOptions { InvoiceNow = true });
         }
 
+        public async Task<Session> CreateSessionAsync(string customerId, string successUrl, string cancelUrl)
+        {
+            var options = new SessionCreateOptions
+            {
+                Customer = customerId,
+                PaymentMethodTypes = new List<string> {
+                    "card",
+                },
+                Mode = "setup",
+                SuccessUrl = successUrl,
+                CancelUrl = cancelUrl,
+            };
+
+            var service = new SessionService();
+            return await service.CreateAsync(options);
+        }
+
         public async Task<Session> CreateSessionAsync(string customerId, string accountId, string itemName, string itemDescription, decimal amount, decimal applicationFee, string successUrl, string cancelUrl)
         {
             var options = new SessionCreateOptions
@@ -334,7 +341,7 @@ namespace Creaxu.Framework.Services
                     Description = itemName,
                     SetupFutureUsage = "off_session",
                     ApplicationFeeAmount = (long)(applicationFee * 100),
-                    TransferData = new SessionPaymentIntentTransferDataOptions
+                    TransferData = new SessionPaymentIntentDataTransferDataOptions
                     {
                         Destination = accountId,
                     }
@@ -405,11 +412,38 @@ namespace Creaxu.Framework.Services
             return await service.GetAsync(paymentIntentId);
         }
 
+        public async Task<PaymentMethod> GetDefaultPaymentMethodAsync(string customerId)
+        {
+            var options = new PaymentMethodListOptions
+            {
+                Customer = customerId,
+                Type = "card",
+            };
+
+            var service = new PaymentMethodService();
+
+            var paymentMethods = await service.ListAsync(options);
+
+            return paymentMethods.FirstOrDefault();
+        }
+
         public async Task<PaymentMethod> GetPaymentMethodAsync(string paymentMethodId)
         {
             var service = new PaymentMethodService();
 
             return await service.GetAsync(paymentMethodId);
+        }
+
+        public async Task<StripeList<PaymentMethod>> GetPaymentMethodsAsync(string customerId)
+        {
+            var options = new PaymentMethodListOptions
+            {
+                Customer = customerId,
+                Type = "card",
+            };
+
+            var service = new PaymentMethodService();
+            return await service.ListAsync(options);
         }
 
         public async Task<PaymentMethod> DetachPaymentMethodAsync(string paymentMethodId)
