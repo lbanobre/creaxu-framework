@@ -7,16 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.CognitiveServices.Vision.ComputerVision" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Azure.CognitiveServices.Vision.ComputerVision" Version="6.0.0" />
     <PackageReference Include="Microsoft.Azure.EventGrid" Version="3.2.0" />
-    <PackageReference Include="Microsoft.Azure.Storage.Blob" Version="11.1.7" />
-    <PackageReference Include="Microsoft.Azure.Storage.Queue" Version="11.1.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.6" />
-    <PackageReference Include="Sendgrid" Version="9.19.0" />
-    <PackageReference Include="Stripe.net" Version="37.26.0" />
+    <PackageReference Include="Microsoft.Azure.Storage.Blob" Version="11.2.2" />
+    <PackageReference Include="Microsoft.Azure.Storage.Queue" Version="11.2.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.9" />
+    <PackageReference Include="Sendgrid" Version="9.21.1" />
+    <PackageReference Include="Stripe.net" Version="39.22.0" />
     <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
-    <PackageReference Include="Twilio" Version="5.45.1" />
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.11.0" />
+    <PackageReference Include="Twilio" Version="5.49.0" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.14.0" />
     <PackageReference Include="Humanizer.Core" Version="2.8.26" />
   </ItemGroup>
 

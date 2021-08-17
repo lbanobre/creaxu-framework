@@ -22,12 +22,14 @@ namespace Creaxu.Framework.Services
             _configuration = configuration;
         }
 
-        /// <summary>
-        /// Builds the token used for authentication
-        /// </summary>
-        /// <param name="email"></param>
-        /// <returns></returns>
         public string BuildToken(IEnumerable<Claim> claims)
+        {
+            var expires = DateTime.Now.AddMinutes(double.Parse(_configuration["Jwt:ExpireTime"]));
+
+            return BuildToken(claims, expires);
+        }
+
+        public string BuildToken(IEnumerable<Claim> claims, DateTime expires)
         {
             // Creates a key from our private key that will be used in the security algorithm next
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
@@ -40,7 +42,7 @@ namespace Creaxu.Framework.Services
                 _configuration["Jwt:Issuer"],
                 _configuration["Jwt:Audience"],
                 claims,
-                expires: DateTime.Now.AddMinutes(double.Parse(_configuration["Jwt:ExpireTime"])),
+                expires: expires,
                 signingCredentials: creds);
 
             // return the token in the correct format using JwtSecurityTokenHandler
