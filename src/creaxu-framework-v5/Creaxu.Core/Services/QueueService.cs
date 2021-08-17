@@ -12,6 +12,7 @@ namespace Creaxu.Core.Services
     public interface IQueueService
     {
         Task PutAsync(string queueName, string message);
+        Task PutAsync(string queueName, string message, TimeSpan visibilityTimeout);
         Task<string> GetAsync(string queueName);
     }
 
@@ -26,7 +27,12 @@ namespace Creaxu.Core.Services
         
         private QueueClient CreateQueueClient(string queueName)
         {
-            var queueClient = new QueueClient(_configuration["AppSettings:Storage"], queueName);
+            var options = new QueueClientOptions
+            {
+                MessageEncoding = QueueMessageEncoding.Base64
+            };
+            
+            var queueClient = new QueueClient(_configuration["AppSettings:Storage"], queueName, options);
             queueClient.CreateIfNotExists();
 
             return queueClient;
@@ -36,6 +42,12 @@ namespace Creaxu.Core.Services
         {
             var queueClient = CreateQueueClient(queueName);
             await queueClient.SendMessageAsync(message);
+        }
+        
+        public async Task PutAsync(string queueName, string message, TimeSpan visibilityTimeout)
+        {
+            var queueClient = CreateQueueClient(queueName);
+            await queueClient.SendMessageAsync(message, visibilityTimeout);
         }
 
         public async Task<string> GetAsync(string queueName)
