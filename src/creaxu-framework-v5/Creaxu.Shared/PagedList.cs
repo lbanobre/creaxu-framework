@@ -3,15 +3,14 @@ using System.Collections.Generic;
 
 namespace Creaxu.Shared
 {
-    public class PagedList<T>
+    public class PagedList
     {
-        public List<T> List { get; set; }
-
         public int Page { get; set; }
         public int TotalPages { get; set; }
         public int TotalCount { get; set; }
+        public int ListCount { get; set; }
 
-        public int PageSize => 15;
+        public int PageSize => 20;
 
         public bool HasPreviousPage
         {
@@ -29,20 +28,6 @@ namespace Creaxu.Shared
             }
         }
 
-        public PagedList()
-        {
-            List = new List<T>();
-        }
-
-        public PagedList(IEnumerable<T> subset, int page, int totalPages, int totalCount) : this()
-        {
-            Page = page;
-            TotalPages = totalPages;
-            TotalCount = totalCount;
-
-            List.AddRange(subset);
-        }
-
         public override string ToString()
         {
             if(TotalCount == 0)
@@ -50,12 +35,12 @@ namespace Creaxu.Shared
                 return "Records not found";
             }
 
-            if(Page == 1 && List.Count < PageSize)
+            if(Page == 1 && ListCount < PageSize)
             {
-                return $"{List.Count} results";
+                return $"{ListCount} results";
             }
 
-            return $"{((Page - 1) * PageSize) + 1}-{(Page - 1) * PageSize + List.Count} of {TotalCount.ToString("N0")}";
+            return $"{((Page - 1) * PageSize) + 1}-{(Page - 1) * PageSize + ListCount} of {TotalCount.ToString("N0")}";
         }
     }
 }
