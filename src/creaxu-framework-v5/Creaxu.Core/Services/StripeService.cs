@@ -181,6 +181,9 @@ namespace Creaxu.Core.Services
         
         public async Task<PaymentIntent> CreateChargeAsync(string accountId, string customerId, string paymentMethodId, string description, decimal amount, decimal applicationFeeAmount, Dictionary<string, string> metadata = null)
         {
+            var accountService = new AccountService();
+            var account = await accountService.GetAsync(accountId);
+           
             var options = new PaymentIntentCreateOptions
             {
                 Description = description,
@@ -201,6 +204,11 @@ namespace Creaxu.Core.Services
                     Destination = accountId
                 }
             };
+
+            if (account.Capabilities.CardPayments == "active")
+            {
+                options.OnBehalfOf = accountId;
+            }
             
             var service = new PaymentIntentService();
             return await service.CreateAsync(options);         
