@@ -1,56 +1,64 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Azure.Storage;
-using Microsoft.Azure.Storage.Blob;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Azure.Storage;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using Azure.Storage.Blobs.Specialized;
+using Creaxu.Framework.Helpers;
 
-namespace Creaxu.Framework.Services
+namespace Creaxu.Core.Services
 {
     public interface IStorageService
     {
-        Task<byte[]> GetBytesAsync(string container, string fileName);
-        Task<Stream> GetStreamAsync(string container, string fileName);
-        Task<string> GetStringAsync(string container, string fileName);
-        Task UploadAsync(string container, string fileName, Stream source);
-        Task UploadAsync(string container, string fileName, byte[] source);
-        Task DeleteAsync(string container, string fileName);
-        Task<List<Uri>> GetDirectoriesAsync(string container, string relativeAddress);
-        Task<List<Uri>> GetBlobsAsync(string container);
-        Task SetMetadataAsync(string container, string fileName, string metadataKey, string metadataValue);
-        string GetMetadata(string container, string fileName, string metadataKey);
+        Task<byte[]> GetBytesAsync(string containerName, string fileName);
+        Task<Stream> GetStreamAsync(string containerName, string fileName);
+        Task<string> GetStringAsync(string containerName, string fileName);
+        Task<string> GetUrlAsync(string containerName, string fileName);
+        Task UploadAsync(string containerName, string fileName, Stream stream, string contentType = null, bool reportProgress = false);
+        Task UploadAsync(string containerName, string fileName, byte[] source, string contentType = null);
+        Task DeleteAsync(string containerName, string fileName);
     }
 
     public class StorageService : IStorageService
     {
-        readonly CloudBlobClient _blobClient;
-
         private readonly IConfiguration _configuration;
 
         public StorageService(IConfiguration configuration)
         {
             _configuration = configuration;
-
-            var storageAccount = CloudStorageAccount.Parse(_configuration["AppSettings:Storage"]);
-
-            _blobClient = storageAccount.CreateCloudBlobClient();
         }
 
-        public async Task<byte[]> GetBytesAsync(string container, string fileName)
+        private async Task<BlobContainerClient> CreateIfNotExistsAsync(string containerName)
+        {
+            var container = new BlobContainerClient(_configuration["AppSettings:Storage"], containerName);
+            await container.CreateIfNotExistsAsync();
+
+            return container;
+        }
+
+        public async Task<byte[]> GetBytesAsync(string containerName, string fileName)
         {
             try
             {
-                var containerRef = _blobClient.GetContainerReference(container);
-                var blockBlob = containerRef.GetBlockBlobReference(fileName);
+                var container = await CreateIfNotExistsAsync(containerName);
+                var blob = container.GetBlobClient(fileName);
+
+                BlobDownloadInfo download = await blob.DownloadAsync();
 
                 byte[] bytes;
                 using (var ms = new MemoryStream())
                 {
-                    await blockBlob.DownloadToStreamAsync(ms);
+                    await download.Content.CopyToAsync(ms);
                     bytes = ms.ToArray();
                 }
+
                 return bytes;
             }
             catch
@@ -59,14 +67,14 @@ namespace Creaxu.Framework.Services
             }
         }
 
-        public async Task<Stream> GetStreamAsync(string container, string fileName)
+        public async Task<Stream> GetStreamAsync(string containerName, string fileName)
         {
             try
             {
-                var containerRef = _blobClient.GetContainerReference(container);
-                var blockBlob = containerRef.GetBlockBlobReference(fileName);
+                var container = await CreateIfNotExistsAsync(containerName);
+                var blob = container.GetBlobClient(fileName);
 
-                return await blockBlob.OpenReadAsync();
+                return await blob.OpenReadAsync();
             }
             catch
             {
@@ -74,20 +82,14 @@ namespace Creaxu.Framework.Services
             }
         }
 
-        public async Task<string> GetStringAsync(string container, string fileName)
+        public async Task<string> GetUrlAsync(string containerName, string fileName)
         {
             try
             {
-                var containerRef = _blobClient.GetContainerReference(container);
-                var blockBlob = containerRef.GetBlockBlobReference(fileName);
+                var container = await CreateIfNotExistsAsync(containerName);
+                var blob = container.GetBlobClient(fileName);
 
-                byte[] bytes;
-                using (var ms = new MemoryStream())
-                {
-                    await blockBlob.DownloadToStreamAsync(ms);
-                    bytes = ms.ToArray();
-                }
-                return System.Text.Encoding.UTF8.GetString(bytes);
+                return container.Uri.AbsoluteUri + "/" + blob.Name;
             }
             catch
             {
@@ -95,100 +97,87 @@ namespace Creaxu.Framework.Services
             }
         }
 
-        public async Task UploadAsync(string container, string fileName, Stream source)
+        public async Task<string> GetStringAsync(string containerName, string fileName)
         {
-            var containerRef = _blobClient.GetContainerReference(container);
-            var blockBlob = containerRef.GetBlockBlobReference(fileName);
+            var bytes = await GetBytesAsync(containerName, fileName);
 
-            await blockBlob.UploadFromStreamAsync(source);
+            if (bytes == null)
+                return null;
+
+            return Encoding.UTF8.GetString(bytes);
         }
 
-        public async Task UploadAsync(string container, string fileName, byte[] source)
+        public async Task UploadAsync(string containerName, string fileName, Stream stream, string contentType = null, bool reportProgress = false)
         {
-            var containerRef = _blobClient.GetContainerReference(container);
-            var blockBlob = containerRef.GetBlockBlobReference(fileName);
+            var container = await CreateIfNotExistsAsync(containerName);
+            var blockBlobClient = container.GetBlockBlobClient(fileName);
 
-            await blockBlob.UploadFromByteArrayAsync(source, 0, source.Length);
-        }
+            BlobClient blobProgress = null;
 
-        public async Task DeleteAsync(string container, string fileName)
-        {
-            var containerRef = _blobClient.GetContainerReference(container);
-            var blockBlob = containerRef.GetBlockBlobReference(fileName);
+            const int blockSize = 1 * 1024 * 1024; //1 MB Block
+            const int offset = 0;
+            var counter = 0;
+            var blockIds = new List<string>();
 
-            await blockBlob.DeleteIfExistsAsync();
-        }
-
-        public async Task SetMetadataAsync(string container, string fileName, string metadataKey, string metadataValue)
-        {
-            var containerRef = _blobClient.GetContainerReference(container);
-            var blockBlob = containerRef.GetBlockBlobReference(fileName);
-
-            blockBlob.Metadata[metadataKey] = metadataValue;
-            
-            await blockBlob.SetMetadataAsync();
-        }
-
-        public string GetMetadata(string container, string fileName, string metadataKey)
-        {
-            var containerRef = _blobClient.GetContainerReference(container);
-            var blockBlob = containerRef.GetBlockBlobReference(fileName);
-           
-            return blockBlob.Metadata[metadataKey];
-        }
-
-        public async Task<List<Uri>> GetDirectoriesAsync(string container, string relativeAddress)
-        {
-            var result = new List<Uri>();
-
-            var containerRef = _blobClient.GetContainerReference(container);
-            var directoryRef = containerRef.GetDirectoryReference(relativeAddress);
-
-
-            BlobContinuationToken continuationToken = null;
+            var bytesRemaining = stream.Length;
             do
             {
-                var blobResultSegment = await directoryRef.ListBlobsSegmentedAsync(continuationToken);
-                continuationToken = blobResultSegment.ContinuationToken;
-
-                foreach (var item in blobResultSegment.Results)
+                if (reportProgress)
                 {
-                    if (item is CloudBlobDirectory)
+                    if (blobProgress == null)
                     {
-                        result.Add(((CloudBlobDirectory)item).Uri);
+                        blobProgress = container.GetBlobClient($"{fileName}.progress");
                     }
-                }
-               
-            } 
-            while (continuationToken != null);
 
-            return result;
-        }
-
-        public async Task<List<Uri>> GetBlobsAsync(string container)
-        {
-            var result = new List<Uri>();
-
-            var containerRef = _blobClient.GetContainerReference(container);
-            
-            BlobContinuationToken continuationToken = null;
-            do
-            {
-                var blobResultSegment = await containerRef.ListBlobsSegmentedAsync(continuationToken);
-                continuationToken = blobResultSegment.ContinuationToken;
-
-                foreach (var item in blobResultSegment.Results)
-                {
-                    if (item is CloudBlockBlob)
-                    {
-                        result.Add(((CloudBlockBlob)item).Uri);
-                    }
+                    var p = (double)(stream.Length - bytesRemaining) / stream.Length * 100;
+                    await blobProgress.UploadAsync(new MemoryStream(Encoding.UTF8.GetBytes(p.ToString(CultureInfo.InvariantCulture))), true);
                 }
 
+                var dataToRead = Math.Min(bytesRemaining, blockSize);
+                var data = new byte[dataToRead];
+                var dataRead = await stream.ReadAsync(data.AsMemory(offset, (int)dataToRead));
+                bytesRemaining -= dataRead;
+
+                if (dataRead > 0)
+                {
+                    var blockId = Convert.ToBase64String(Encoding.UTF8.GetBytes(counter.ToString("d6")));
+                    await blockBlobClient.StageBlockAsync(blockId, new MemoryStream(data));
+                    blockIds.Add(blockId);
+                    counter++;
+                }
             }
-            while (continuationToken != null);
+            while (bytesRemaining > 0);
 
-            return result;
+            await blockBlobClient.CommitBlockListAsync(blockIds);
+
+            if (string.IsNullOrEmpty(contentType))
+            {
+                await blockBlobClient.SetHttpHeadersAsync(new BlobHttpHeaders
+                { ContentType = MimeTypeMap.GetMimeType(Path.GetExtension(fileName)) });
+            }
+            else
+            {
+                await blockBlobClient.SetHttpHeadersAsync(new BlobHttpHeaders
+                { ContentType = contentType });
+            }
+
+            if (blobProgress != null)
+            {
+                await blobProgress.DeleteIfExistsAsync();
+            }
+        }
+
+        public async Task UploadAsync(string containerName, string fileName, byte[] source, string contentType = null)
+        {
+            await UploadAsync(containerName, fileName, new MemoryStream(source), contentType, false);
+        }
+
+        public async Task DeleteAsync(string containerName, string fileName)
+        {
+            var container = await CreateIfNotExistsAsync(containerName);
+            var blob = container.GetBlobClient(fileName);
+
+            await blob.DeleteIfExistsAsync();
         }
     }
 }

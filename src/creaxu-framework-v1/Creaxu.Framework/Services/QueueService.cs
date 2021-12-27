@@ -1,127 +1,66 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Azure.Storage.Blob;
-using Microsoft.Azure.Storage.Queue;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Azure.Storage;
+using Azure.Storage.Queues;
+using Azure.Storage.Queues.Models;
 
-namespace Creaxu.Framework.Services
+namespace Creaxu.Core.Services
 {
     public interface IQueueService
     {
-        Task<bool> ClearAsync(string queueName);
-        Task DeleteAsync(string queueName);
-        Task<bool> ExistsAsync(string queueName);
+        Task PutAsync(string queueName, string message);
+        Task PutAsync(string queueName, string message, TimeSpan visibilityTimeout);
         Task<string> GetAsync(string queueName);
-        Task<bool> PutAsync(string queueName, string content);
-        Task<bool> PutAsync(string queueName, string content, TimeSpan initialVisibilityDelay);
     }
 
     public class QueueService : IQueueService
     {
-        private readonly CloudQueueClient _queueClient;
-
         private readonly IConfiguration _configuration;
 
         public QueueService(IConfiguration configuration)
         {
             _configuration = configuration;
-
-            var storageAccount = CloudStorageAccount.Parse(_configuration["AppSettings:Storage"]);
-
-            _queueClient = storageAccount.CreateCloudQueueClient();
         }
 
-        public async Task<bool> PutAsync(string queueName, string content)
+        private QueueClient CreateQueueClient(string queueName)
         {
-            try
+            var options = new QueueClientOptions
             {
-                var queue = _queueClient.GetQueueReference(queueName);
-                await queue.CreateIfNotExistsAsync();
+                MessageEncoding = QueueMessageEncoding.Base64
+            };
 
-                await queue.AddMessageAsync(new CloudQueueMessage(content));
-                return true;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            var queueClient = new QueueClient(_configuration["AppSettings:Storage"], queueName, options);
+            queueClient.CreateIfNotExists();
+
+            return queueClient;
         }
 
-        public async Task<bool> PutAsync(string queueName, string content, TimeSpan initialVisibilityDelay)
+        public async Task PutAsync(string queueName, string message)
         {
-            try
-            {
-                var queue = _queueClient.GetQueueReference(queueName);
-                await queue.CreateIfNotExistsAsync();
+            var queueClient = CreateQueueClient(queueName);
+            await queueClient.SendMessageAsync(message);
+        }
 
-                await queue.AddMessageAsync(new CloudQueueMessage(content), null, initialVisibilityDelay, null, null);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+        public async Task PutAsync(string queueName, string message, TimeSpan visibilityTimeout)
+        {
+            var queueClient = CreateQueueClient(queueName);
+            await queueClient.SendMessageAsync(message, visibilityTimeout);
         }
 
         public async Task<string> GetAsync(string queueName)
         {
-            var queue = _queueClient.GetQueueReference(queueName);
-            await queue.CreateIfNotExistsAsync();
+            var queueClient = CreateQueueClient(queueName);
 
-            var message = await queue.GetMessageAsync();
-            if (message != null)
-            {
-                var result = message.AsString;
-                await queue.DeleteMessageAsync(message);
+            QueueMessage message = await queueClient.ReceiveMessageAsync();
+            if (message == null)
+                return null;
 
-                return result;
-            }
-            return null;
-        }
+            await queueClient.DeleteMessageAsync(message.MessageId, message.PopReceipt);
 
-        public async Task<bool> ExistsAsync(string queueName)
-        {
-            try
-            {
-                var queue = _queueClient.GetQueueReference(queueName);
-                return await queue.ExistsAsync();
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        public async Task DeleteAsync(string queueName)
-        {
-            try
-            {
-                var queue = _queueClient.GetQueueReference(queueName);
-                await queue.DeleteAsync();
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
-        public async Task<bool> ClearAsync(string queueName)
-        {
-            try
-            {
-                var queue = _queueClient.GetQueueReference(queueName);
-                await queue.ClearAsync();
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            return message.MessageText;
         }
     }
 }
