@@ -103,7 +103,7 @@ namespace Creaxu.Blazor.Extensions
                 Convert.FromBase64String(base64String);
                 return true;
             }
-            catch (Exception exception)
+            catch
             {
                 // Handle the exception
             }
