@@ -53,7 +53,7 @@ namespace Creaxu.Blazor.Services
             _httpClient = httpClient;
             _jwtAuthenticationState = jwtAuthenticationState;
         }
-
+        
         public async Task<ApiResponse> GetAsync(string requestUri)
         {
             return await ExecuteAsync(requestUri, HttpMethod.GET);
